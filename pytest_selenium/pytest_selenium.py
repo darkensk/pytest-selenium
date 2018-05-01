@@ -51,6 +51,32 @@ def session_capabilities(pytestconfig):
     return capabilities
 
 
+def merge_capabilities(default_caps, session_caps, path=None):
+    """ Merges 2 sets of capabilities together
+    based on https://bit.ly/2rbYuiH
+    """
+    if path is None:
+        path = []
+
+    for key in session_caps:
+        if key in default_caps:
+            if isinstance(default_caps[key], dict) and isinstance(session_caps[key], dict):
+                merge_capabilities(default_caps[key], session_caps[key], path + [str(key)])
+            elif isinstance(default_caps[key], list) and isinstance(session_caps[key], list):
+                # if lists are not the same(or empty), add them up
+                if default_caps[key] != session_caps[key]:
+                    default_caps[key] = default_caps[key] + session_caps[key]
+            elif default_caps[key] == session_caps[key]:
+                pass  # same leaf value
+            else:
+                # Current session capabilities wins
+                default_caps[key] = session_caps[key]
+        else:
+            default_caps[key] = session_caps[key]
+    # Return updated capabilities
+    return default_caps
+
+
 @pytest.fixture
 def capabilities(request, driver_class, chrome_options, firefox_options,
                  session_capabilities):
@@ -68,7 +94,8 @@ def capabilities(request, driver_class, chrome_options, firefox_options,
             key = firefox_options.KEY
             options = firefox_options.to_capabilities()
         if all([key, options]):
-            capabilities.setdefault(key, {}).update(options.get(key, {}))
+            # Merge default browser options with current session capabilities
+            capabilities = merge_capabilities(options, capabilities)
     capabilities_marker = request.node.get_marker('capabilities')
     if capabilities_marker is not None:
         # add capabilities from the marker
