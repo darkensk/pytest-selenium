@@ -63,9 +63,13 @@ def merge_capabilities(default_caps, session_caps, path=None):
             if isinstance(default_caps[key], dict) and isinstance(session_caps[key], dict):
                 merge_capabilities(default_caps[key], session_caps[key], path + [str(key)])
             elif isinstance(default_caps[key], list) and isinstance(session_caps[key], list):
-                # if lists are not the same(or empty), add them up
+                # if lists are not the same(or empty), add items from session capabilities
                 if default_caps[key] != session_caps[key]:
-                    default_caps[key] = default_caps[key] + session_caps[key]
+                    for item in session_caps[key]:
+                        if item in default_caps[key]:
+                            pass
+                        else:
+                            default_caps[key].append(item)
             elif default_caps[key] == session_caps[key]:
                 pass  # same leaf value
             else:
