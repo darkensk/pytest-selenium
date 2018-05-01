@@ -46,3 +46,17 @@ def test_mark(testdir):
             assert capabilities['foo'] == 'bar'
     """)
     testdir.quick_qa(file_test, passed=1)
+
+
+def test_remote_capabilities(testdir):
+    variables = testdir.makefile('.json',
+                                 '{"capabilities": {"browserName": "chrome",'
+                                 ' "goog:chromeOptions": {"args": ["headless"], "extensions": []}}}')
+    file_test = testdir.makepyfile("""
+        import pytest
+        @pytest.mark.nondestructive
+        def test_capabilities(session_capabilities, capabilities):
+            assert session_capabilities['goog:chromeOptions'] == {'args': ['headless'], 'extensions': []}
+            assert capabilities['goog:chromeOptions'] == {'args': ['headless'], 'extensions': []}
+    """)
+    testdir.quick_qa('--driver', 'Remote', '--variables', variables, file_test, passed=1)
